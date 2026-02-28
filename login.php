@@ -158,7 +158,7 @@ $conn->close();
     <div class="login-container">
         <div class="login-header">
             <i class="bi bi-shield-lock-fill icon"></i>
-            <h1>SISTEM rekod PENGUATKUASAAN</h1>
+            <h1>SISTEM REKOD PENGUATKUASAAN</h1>
             <p>Sila log masuk untuk teruskan</p>
         </div>
         <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
