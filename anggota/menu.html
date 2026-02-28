@@ -1,0 +1,162 @@
+<?php
+session_start();
+if (!isset($_SESSION['masuk']) || $_SESSION['masuk'] !== true) {
+    header("Location: login.php");
+    exit();
+}
+?>
+
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - Sistem Penguatkuasaan</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #e9ecef, #d6eaff);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+        /* Ruang untuk imej background di masa depan */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.1; /* Imej akan kelihatan samar */
+            z-index: -1;
+        }
+        .header {
+            background-color: #0d1a40; /* Navy blue */
+            color: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .menu-container {
+            max-width: 900px;
+            margin: 80px auto 40px auto;
+            padding: 30px;
+        }
+        h2 {
+            color: #0d1a40; /* Navy blue */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        .menu-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid #0d1a40; /* Navy blue */
+        }
+        .menu-card:hover:not(.disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        .menu-card.disabled {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+        .menu-card .btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            transition: background-color 0.3s ease;
+        }
+        .menu-card .btn-primary {
+            background-color: #0d1a40; /* Navy blue */
+        }
+        .menu-card .btn-primary:hover {
+            background-color: #1e3a8a; /* Navy blue lebih terang */
+        }
+        .menu-card .btn-secondary {
+            background-color: #6c757d;
+        }
+        .menu-card .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #0d1a40; /* Navy blue */
+        }
+        .menu-card.disabled .icon {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>SISTEM PENGUATKUASAAN</h1>
+    </div>
+
+    <div class="menu-container">
+        <h2 class="text-center">MENU UTAMA</h2>
+        <div class="row">
+            <!-- Butang Daftar Anggota (Aktif) -->
+            <div class="col-md-4 mb-4">
+                <div class="menu-card">
+                    <i class="bi bi-person-plus-fill icon"></i>
+                    <a href="daftar_anggota.php" class="btn btn-primary">DAFTAR ANGGOTA</a>
+                </div>
+            </div>
+            <!-- Butang Senarai Anggota (Dinyahtifkan) -->
+            <div class="col-md-4 mb-4">
+                <div class="menu-card disabled">
+                    <i class="bi bi-list-ul icon"></i>
+                    <button class="btn btn-secondary" disabled>SENARAI ANGGOTA</button>
+                </div>
+            </div>
+            <!-- Butang Laporan (Dinyahtifkan) -->
+            <div class="col-md-4 mb-4">
+                <div class="menu-card disabled">
+                    <i class="bi bi-file-earmark-text icon"></i>
+                    <button class="btn btn-secondary" disabled>LAPORAN</button>
+                </div>
+            </div>
+            <!-- Butang Tetapan (Dinyahtifkan) -->
+            <div class="col-md-4 mb-4">
+                <div class="menu-card disabled">
+                    <i class="bi bi-gear-fill icon"></i>
+                    <button class="btn btn-secondary" disabled>TETAPAN</button>
+                </div>
+            </div>
+            <!-- Butang Log Keluar -->
+            <div class="col-md-4 mb-4">
+                <div class="menu-card">
+                    <i class="bi bi-box-arrow-right icon"></i>
+                    <a href="logout.php" class="btn btn-primary">LOG KELUAR</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
