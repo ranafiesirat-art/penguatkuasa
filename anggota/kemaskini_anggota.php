@@ -86,11 +86,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Proses upload gambar (jika ada gambar baru)
     $gambar = $anggota['gambar']; // Kekalkan gambar lama jika tiada gambar baru
     if (!empty($_FILES['gambar']['name'])) {
-        $target_dir = "C:/xampp/htdocs/penguatkuasa/anggota/uploads/";
+        $target_dir = "C:/xampp_new/htdocs/penguatkuasa/anggota/uploads/";
         $file_extension = pathinfo($_FILES["gambar"]["name"], PATHINFO_EXTENSION);
         $gambar_filename = uniqid() . '.' . $file_extension;
         $gambar_full_path = $target_dir . $gambar_filename;
-        $gambar_relative_path = "/penguatkuasa/anggota/uploads/" . $gambar_filename;
+        $gambar_relative_path = "anggota/uploads/" . $gambar_filename;
         $imageFileType = strtolower($file_extension);
 
         $check = getimagesize($_FILES["gambar"]["tmp_name"]);
@@ -99,7 +99,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 if (in_array($imageFileType, ["jpg", "png", "jpeg"])) {
                     // Hapus gambar lama jika ada
                     if (!empty($anggota['gambar'])) {
-                        $gambar_lama_path = "C:/xampp/htdocs" . $anggota['gambar'];
+                        $gambar_lama_path = "C:/xampp/htdocs/penguatkuasa/" . $anggota['gambar'];
                         if (file_exists($gambar_lama_path)) {
                             unlink($gambar_lama_path);
                         }

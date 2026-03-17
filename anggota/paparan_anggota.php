@@ -255,16 +255,20 @@ $stmt->close();
 
         <!-- Gambar -->
         <div class="text-center">
-            <?php
-            $gambar_path = !empty($anggota['gambar']) ? $anggota['gambar'] : '';
-            $gambar_full_path = "C:/xampp/htdocs" . $gambar_path;
-            if (!empty($gambar_path) && file_exists($gambar_full_path)) {
-            ?>
-                <img src="<?php echo htmlspecialchars($gambar_path); ?>" alt="Gambar Anggota" class="anggota-img">
+    <?php
+    $gambar_path = !empty($anggota['gambar']) ? trim($anggota['gambar']) : '';
+    if (!empty($gambar_path)) {
+    ?>
+        <img src="/penguatkuasa/<?php echo htmlspecialchars($gambar_path); ?>"
+             alt="Gambar Anggota"
+             class="anggota-img"
+             onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=Tiada+Gambar';">
             <?php } else { ?>
-                <img src="https://via.placeholder.com/150" alt="Tiada Gambar" class="anggota-img">
-            <?php } ?>
-        </div>
+            <img src="https://via.placeholder.com/150?text=Tiada+Gambar"
+             alt="Tiada Gambar"
+             class="anggota-img">
+    <?php } ?>
+</div>
 
         <!-- Maklumat Anggota -->
         <div class="info-row row">
