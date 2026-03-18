@@ -5,6 +5,7 @@ if (!isset($_SESSION['masuk']) || $_SESSION['masuk'] !== true) {
     exit();
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="ms">
 <head>
@@ -160,12 +161,13 @@ if (!isset($_SESSION['masuk']) || $_SESSION['masuk'] !== true) {
     <div class="header">
         <h1>SISTEM BAPAK NAPIE PUNYA</h1>
     </div>
+
     <div class="menu-container">
         <div class="row">
             <div class="col-md-4 image-container">
-                <img src="gambar/ENFORCEMENT1.jpg" alt="Gambar Samping" class="side-image">
-                <img src="gambar/ENFORCEMENT2.jpg" alt="Gambar Samping 2" class="side-image">
-                <img src="gambar/uniform.jpg" alt="Gambar Samping 3" class="side-image">
+                <img src="/penguatkuasa/anggota/gambar/ENFORCEMENT1.jpg" alt="Gambar Samping" class="side-image">
+                <img src="/penguatkuasa/anggota/gambar/ENFORCEMENT2.jpg" alt="Gambar Samping 2" class="side-image">
+                <img src="/penguatkuasa/anggota/gambar/uniform.jpg" alt="Gambar Samping 3" class="side-image">
             </div>
             <div class="col-md-8">
                 <h2 class="text-center">PUSAT PEMERINTAHAN</h2>
@@ -210,6 +212,7 @@ if (!isset($_SESSION['masuk']) || $_SESSION['masuk'] !== true) {
             </div>
         </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
