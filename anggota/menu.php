@@ -168,7 +168,7 @@ if (!isset($_SESSION['masuk']) || $_SESSION['masuk'] !== true) {
                 <img src="gambar/uniform.jpg" alt="Gambar Samping 3" class="side-image">
             </div>
             <div class="col-md-8">
-                <h2 class="text-center">PUSAT PEMERINTAHAN</h2>
+                <h2 class="text-center">PUSAT PEMERINTAHAN RUMAH</h2>
                 <div class="row">
                     <div class="col-md-4 mb-4">
                         <div class="menu-card disabled">
