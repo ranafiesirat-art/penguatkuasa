@@ -13,7 +13,6 @@ if "%msg%"=="" set msg=auto update
 
 git add .
 git commit -m "%msg%" || echo No changes to commit
-
 git push origin main
 
 echo.
