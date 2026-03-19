@@ -255,32 +255,19 @@ $stmt->close();
 
         <!-- Gambar -->
         <div class="text-center">
-<?php
-$gambar_path = !empty($anggota['gambar']) ? trim($anggota['gambar']) : '';
-
-// Detect environment
-$host = $_SERVER['HTTP_HOST'] ?? '';
-$is_local = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;
-
-// Set base path
-$base_url = $is_local ? '/penguatkuasa' : '';
-
-if (!empty($gambar_path)) {
-    $full_path = $base_url . '/' . ltrim($gambar_path, '/');
-?>
-    <img src="<?php echo htmlspecialchars($full_path); ?>"
-         alt="Gambar Anggota"
-         class="anggota-img"
-         onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=Tiada+Gambar';">
-<?php
-} else {
-?>
-    <img src="https://via.placeholder.com/150?text=Tiada+Gambar"
-         alt="Tiada Gambar"
-         class="anggota-img">
-<?php
-}
-?>
+    <?php
+    $gambar_path = !empty($anggota['gambar']) ? trim($anggota['gambar']) : '';
+    if (!empty($gambar_path)) {
+    ?>
+        <img src="/penguatkuasa/<?php echo htmlspecialchars($gambar_path); ?>"
+             alt="Gambar Anggota"
+             class="anggota-img"
+             onerror="this.onerror=null; this.src='https://via.placeholder.com/150?text=Tiada+Gambar';">
+            <?php } else { ?>
+            <img src="https://via.placeholder.com/150?text=Tiada+Gambar"
+             alt="Tiada Gambar"
+             class="anggota-img">
+    <?php } ?>
 </div>
 
         <!-- Maklumat Anggota -->
