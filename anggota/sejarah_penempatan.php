@@ -1,25 +1,20 @@
 <?php
 include_once '../session_check.php';
-
 // Sambungan ke database
 $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "penguatkuasa";
-
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
     die("Sambungan gagal: " . $conn->connect_error);
 }
-
 // Ambil no_komputer dari URL
 $no_komputer = isset($_GET['no_komputer']) ? filter_input(INPUT_GET, 'no_komputer', FILTER_SANITIZE_STRING) : '';
-
 if (!$no_komputer) {
     echo "<script>alert('No komputer tidak ditemui.'); window.location='senarai_anggota.php';</script>";
     exit;
 }
-
 // Ambil nama anggota untuk paparan
 $sql_anggota = "SELECT nama FROM anggota WHERE no_komputer = ?";
 $stmt_anggota = $conn->prepare($sql_anggota);
@@ -28,17 +23,14 @@ $stmt_anggota->execute();
 $result_anggota = $stmt_anggota->get_result();
 $anggota = $result_anggota->fetch_assoc();
 $stmt_anggota->close();
-
 if (!$anggota) {
     echo "<script>alert('Data anggota tidak ditemui.'); window.location='senarai_anggota.php';</script>";
     exit;
 }
-
 // Ambil senarai unit/seksyen, jawatan, dan status untuk dropdown
 $unit_result = $conn->query("SELECT id, nama FROM unit_seksyen ORDER BY nama");
 $jawatan_result = $conn->query("SELECT id, nama FROM jawatan ORDER BY nama");
 $status_result = $conn->query("SELECT id, nama FROM status ORDER BY nama");
-
 // Proses tambah rekod penempatan
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah'])) {
     $id_unit_seksyen = filter_input(INPUT_POST, 'id_unit_seksyen', FILTER_SANITIZE_NUMBER_INT);
@@ -46,7 +38,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah'])) {
     $id_status = filter_input(INPUT_POST, 'id_status', FILTER_SANITIZE_NUMBER_INT);
     $tarikh_lapor = filter_input(INPUT_POST, 'tarikh_lapor', FILTER_SANITIZE_STRING);
     $tarikh_tamat = filter_input(INPUT_POST, 'tarikh_tamat', FILTER_SANITIZE_STRING);
-
     // Validasi input
     if (empty($id_unit_seksyen) || empty($id_jawatan) || empty($id_status) || empty($tarikh_lapor)) {
         echo "<script>alert('Sila isi semua medan yang diperlukan.');</script>";
@@ -64,7 +55,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah'])) {
             $update_active->close();
         }
         $check_active->close();
-
         // Tambah rekod penempatan baru
         $sql_tambah = "INSERT INTO sejarah_penempatan (no_komputer, id_unit_seksyen, id_jawatan, id_status, tarikh_lapor, tarikh_tamat) VALUES (?, ?, ?, ?, ?, ?)";
         $stmt_tambah = $conn->prepare($sql_tambah);
@@ -78,7 +68,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah'])) {
             $log_stmt->bind_param("ss", $aktiviti, $no_komputer);
             $log_stmt->execute();
             $log_stmt->close();
-
             echo "<script>alert('Rekod penempatan berjaya ditambah.'); window.location='sejarah_penempatan.php?no_komputer=" . urlencode($no_komputer) . "';</script>";
         } else {
             echo "<script>alert('Ralat menambah rekod: " . $conn->error . "');</script>";
@@ -86,7 +75,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['tambah'])) {
         $stmt_tambah->close();
     }
 }
-
 // Proses kemas kini rekod penempatan
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['kemas_kini'])) {
     $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
@@ -95,7 +83,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['kemas_kini'])) {
     $id_status = filter_input(INPUT_POST, 'id_status', FILTER_SANITIZE_NUMBER_INT);
     $tarikh_lapor = filter_input(INPUT_POST, 'tarikh_lapor', FILTER_SANITIZE_STRING);
     $tarikh_tamat = filter_input(INPUT_POST, 'tarikh_tamat', FILTER_SANITIZE_STRING);
-
     // Validasi input
     if (empty($id_unit_seksyen) || empty($id_jawatan) || empty($id_status) || empty($tarikh_lapor)) {
         echo "<script>alert('Sila isi semua medan yang diperlukan.');</script>";
@@ -112,7 +99,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['kemas_kini'])) {
             $log_stmt->bind_param("ss", $aktiviti, $no_komputer);
             $log_stmt->execute();
             $log_stmt->close();
-
             echo "<script>alert('Rekod penempatan berjaya dikemas kini.'); window.location='sejarah_penempatan.php?no_komputer=" . urlencode($no_komputer) . "';</script>";
         } else {
             echo "<script>alert('Ralat mengemas kini rekod: " . $conn->error . "');</script>";
@@ -120,11 +106,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['kemas_kini'])) {
         $stmt_kemas_kini->close();
     }
 }
-
 // Proses padam rekod penempatan
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['padam'])) {
     $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-
     $sql_padam = "DELETE FROM sejarah_penempatan WHERE id = ? AND no_komputer = ?";
     $stmt_padam = $conn->prepare($sql_padam);
     $stmt_padam->bind_param("is", $id, $no_komputer);
@@ -136,29 +120,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['padam'])) {
         $log_stmt->bind_param("ss", $aktiviti, $no_komputer);
         $log_stmt->execute();
         $log_stmt->close();
-
         echo "<script>alert('Rekod penempatan berjaya dipadam.'); window.location='sejarah_penempatan.php?no_komputer=" . urlencode($no_komputer) . "';</script>";
     } else {
         echo "<script>alert('Ralat memadam rekod: " . $conn->error . "');</script>";
     }
     $stmt_padam->close();
 }
-
-// Ambil senarai rekod penempatan, susun mengikut tarikh_lapor menurun (DESC)
-$sql_rekod = "SELECT sp.id, sp.id_unit_seksyen, sp.id_jawatan, sp.id_status, sp.tarikh_lapor, sp.tarikh_tamat, 
-              u.nama AS unit_seksyen, j.nama AS jawatan, s.nama AS status 
-              FROM sejarah_penempatan sp 
-              LEFT JOIN unit_seksyen u ON sp.id_unit_seksyen = u.id 
-              LEFT JOIN jawatan j ON sp.id_jawatan = j.id 
-              LEFT JOIN status s ON sp.id_status = s.id 
-              WHERE sp.no_komputer = ? 
+// Ambil senarai rekod penempatan dengan Bahagian, Unit, Seksyen
+$sql_rekod = "SELECT sp.id, sp.id_unit_seksyen, sp.id_jawatan, sp.id_status, sp.tarikh_lapor, sp.tarikh_tamat,
+              b.nama_bahagian AS bahagian,
+              u.nama AS unit,
+              sk.nama AS seksyen,
+              j.nama AS jawatan, 
+              s.nama AS status
+              FROM sejarah_penempatan sp
+              LEFT JOIN anggota a ON sp.no_komputer = a.no_komputer
+              LEFT JOIN bahagian b ON a.bahagian_id = b.id
+              LEFT JOIN unit u ON a.unit_id = u.id
+              LEFT JOIN seksyen sk ON a.seksyen_id = sk.id
+              LEFT JOIN jawatan j ON sp.id_jawatan = j.id
+              LEFT JOIN status s ON sp.id_status = s.id
+              WHERE sp.no_komputer = ?
               ORDER BY sp.tarikh_lapor DESC";
 $stmt_rekod = $conn->prepare($sql_rekod);
 $stmt_rekod->bind_param("s", $no_komputer);
 $stmt_rekod->execute();
 $rekod_penempatan = $stmt_rekod->get_result();
 ?>
-
 <!DOCTYPE html>
 <html lang="ms">
 <head>
@@ -327,10 +315,8 @@ $rekod_penempatan = $stmt_rekod->get_result();
     <div class="header">
         <h1>SISTEM PENGUATKUASAAN</h1>
     </div>
-
     <div class="container">
         <h2 class="text-center">SEJARAH PENEMPATAN - <?php echo htmlspecialchars(strtoupper($anggota['nama'])); ?></h2>
-
         <!-- Borang Tambah Rekod Penempatan -->
         <h4 class="mt-4">Tambah Rekod Penempatan Baru</h4>
         <form method="POST" action="">
@@ -383,7 +369,6 @@ $rekod_penempatan = $stmt_rekod->get_result();
                 <button type="submit" name="tambah" class="btn btn-success btn-custom"><i class="bi bi-plus-circle me-2"></i>TAMBAH</button>
             </div>
         </form>
-
         <!-- Senarai Rekod Penempatan -->
         <h4 class="mt-5">Senarai Rekod Penempatan</h4>
         <?php if ($rekod_penempatan->num_rows > 0) { ?>
@@ -391,7 +376,9 @@ $rekod_penempatan = $stmt_rekod->get_result();
                 <thead>
                     <tr>
                         <th>BIL</th>
-                        <th>UNIT/SEKSYEN</th>
+                        <th>BAHAGIAN</th>
+                        <th>UNIT</th>
+                        <th>SEKSYEN</th>
                         <th>JAWATAN</th>
                         <th>STATUS</th>
                         <th>TARIKH LAPOR</th>
@@ -403,17 +390,19 @@ $rekod_penempatan = $stmt_rekod->get_result();
                     <?php $bil = 1; while ($row = $rekod_penempatan->fetch_assoc()) { ?>
                         <tr>
                             <td><?php echo $bil++; ?></td>
-                            <td><?php echo htmlspecialchars(strtoupper($row['unit_seksyen'])); ?></td>
+                            <td><?php echo htmlspecialchars(strtoupper($row['bahagian'] ?: 'TIADA')); ?></td>
+                            <td><?php echo htmlspecialchars(strtoupper($row['unit'] ?: 'TIADA')); ?></td>
+                            <td><?php echo htmlspecialchars(strtoupper($row['seksyen'] ?: 'TIADA')); ?></td>
                             <td><?php echo htmlspecialchars(strtoupper($row['jawatan'])); ?></td>
                             <td><?php echo htmlspecialchars(strtoupper($row['status'])); ?></td>
                             <td>
-                                <?php 
+                                <?php
                                 $tarikh_lapor = DateTime::createFromFormat('Y-m-d', $row['tarikh_lapor']);
                                 echo $tarikh_lapor ? $tarikh_lapor->format('d/m/Y') : $row['tarikh_lapor'];
                                 ?>
                             </td>
                             <td>
-                                <?php 
+                                <?php
                                 if ($row['tarikh_tamat']) {
                                     $tarikh_tamat = DateTime::createFromFormat('Y-m-d', $row['tarikh_tamat']);
                                     echo $tarikh_tamat ? $tarikh_tamat->format('d/m/Y') : $row['tarikh_tamat'];
@@ -436,7 +425,6 @@ $rekod_penempatan = $stmt_rekod->get_result();
                                         </button>
                                     </form>
                                 </div>
-
                                 <!-- Modal untuk Edit -->
                                 <div class="modal fade" id="editModal<?php echo $row['id']; ?>" tabindex="-1" aria-labelledby="editModalLabel<?php echo $row['id']; ?>" aria-hidden="true">
                                     <div class="modal-dialog">
@@ -453,8 +441,8 @@ $rekod_penempatan = $stmt_rekod->get_result();
                                                             <label class="form-label">UNIT/SEKSYEN:</label>
                                                             <select name="id_unit_seksyen" class="form-control" required>
                                                                 <option value="">Pilih Unit/Seksyen</option>
-                                                                <?php 
-                                                                $unit_result->data_seek(0); // Reset pointer
+                                                                <?php
+                                                                $unit_result->data_seek(0);
                                                                 while ($unit = $unit_result->fetch_assoc()) { ?>
                                                                     <option value="<?php echo $unit['id']; ?>" <?php echo $unit['id'] == $row['id_unit_seksyen'] ? 'selected' : ''; ?>>
                                                                         <?php echo strtoupper($unit['nama']); ?>
@@ -466,8 +454,8 @@ $rekod_penempatan = $stmt_rekod->get_result();
                                                             <label class="form-label">JAWATAN:</label>
                                                             <select name="id_jawatan" class="form-control" required>
                                                                 <option value="">Pilih Jawatan</option>
-                                                                <?php 
-                                                                $jawatan_result->data_seek(0); // Reset pointer
+                                                                <?php
+                                                                $jawatan_result->data_seek(0);
                                                                 while ($jawatan = $jawatan_result->fetch_assoc()) { ?>
                                                                     <option value="<?php echo $jawatan['id']; ?>" <?php echo $jawatan['id'] == $row['id_jawatan'] ? 'selected' : ''; ?>>
                                                                         <?php echo strtoupper($jawatan['nama']); ?>
@@ -479,8 +467,8 @@ $rekod_penempatan = $stmt_rekod->get_result();
                                                             <label class="form-label">STATUS:</label>
                                                             <select name="id_status" class="form-control" required>
                                                                 <option value="">Pilih Status</option>
-                                                                <?php 
-                                                                $status_result->data_seek(0); // Reset pointer
+                                                                <?php
+                                                                $status_result->data_seek(0);
                                                                 while ($status = $status_result->fetch_assoc()) { ?>
                                                                     <option value="<?php echo $status['id']; ?>" <?php echo $status['id'] == $row['id_status'] ? 'selected' : ''; ?>>
                                                                         <?php echo strtoupper($status['nama']); ?>
@@ -515,14 +503,12 @@ $rekod_penempatan = $stmt_rekod->get_result();
         <?php } else { ?>
             <p class="text-center">Tiada rekod penempatan untuk anggota ini.</p>
         <?php } ?>
-
         <!-- Butang Navigasi -->
         <div class="btn-group">
             <a href="paparan_anggota.php?no_komputer=<?php echo urlencode($no_komputer); ?>" class="btn btn-secondary btn-custom"><i class="bi bi-arrow-left me-2"></i>KEMBALI KE PAPARAN ANGGOTA</a>
             <a href="menu.php" class="btn btn-primary btn-custom"><i class="bi bi-house me-2"></i>KE HALAMAN UTAMA</a>
         </div>
     </div>
-
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

@@ -1,10 +1,12 @@
 <?php
-include_once '../session_check.php';
+include_once '../session_check.php'; // Gantikan semakan sesi manual dengan fail di akar
+
 // Sambungan ke database
 $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "penguatkuasa";
+
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
     die("Sambungan gagal: " . $conn->connect_error);
@@ -28,48 +30,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $daerah = filter_input(INPUT_POST, 'daerah', FILTER_SANITIZE_STRING);
     $negeri = filter_input(INPUT_POST, 'negeri', FILTER_SANITIZE_STRING);
     $id_jawatan = filter_input(INPUT_POST, 'id_jawatan', FILTER_SANITIZE_NUMBER_INT);
-  
-    // Bahagian Baru - Hierarki
-    $bahagian_id = filter_input(INPUT_POST, 'bahagian_id', FILTER_SANITIZE_NUMBER_INT);
-    $unit_id = filter_input(INPUT_POST, 'unit_id', FILTER_SANITIZE_NUMBER_INT);
-    $seksyen_id = filter_input(INPUT_POST, 'seksyen_id', FILTER_SANITIZE_NUMBER_INT);
-  
+    $id_unit_seksyen = filter_input(INPUT_POST, 'id_unit_seksyen', FILTER_SANITIZE_NUMBER_INT);
     $id_status = filter_input(INPUT_POST, 'id_status', FILTER_SANITIZE_NUMBER_INT);
     $id_penempatan = filter_input(INPUT_POST, 'id_penempatan', FILTER_SANITIZE_NUMBER_INT);
 
-    // Validasi
+    // Validasi No Komputer (contoh: maksimum 10 aksara, hanya nombor dan huruf)
     if (!preg_match('/^[a-zA-Z0-9]{1,10}$/', $no_komputer)) {
         echo "<script>alert('No Komputer tidak sah. Hanya nombor dan huruf dibenarkan, maksimum 10 aksara.');</script>";
         exit();
     }
+
+    // Validasi Kad Pengenalan (jika diisi)
     if (!empty($kad_pengenalan) && !preg_match('/^\d{6}-\d{2}-\d{4}$/', $kad_pengenalan)) {
         echo "<script>alert('Kad Pengenalan tidak sah. Format: 123456-12-1234');</script>";
         exit();
     }
+
+    // Validasi Gaji (jika diisi)
     if (!empty($gaji) && ($gaji < 0 || !is_numeric($gaji))) {
         echo "<script>alert('Gaji tidak sah. Sila masukkan nombor positif.');</script>";
         exit();
     }
+
+    // Validasi No Telefon (jika diisi)
     if (!empty($no_telefon) && !preg_match('/^01[0-9]-[0-9]{7,8}$/', $no_telefon)) {
         echo "<script>alert('No Telefon tidak sah. Format: 01X-XXXXXXX');</script>";
         exit();
     }
 
+    // Buat alamat kosong jika tiada input
     $alamat = (!empty($alamat_no) || !empty($alamat_jalan) || !empty($alamat_taman) || !empty($poskod) || !empty($daerah) || !empty($negeri))
-        ? "$alamat_no, $alamat_jalan, $alamat_taman, $poskod $daerah, $negeri" : '';
+        ? "$alamat_no, $alamat_jalan, $alamat_taman, $poskod $daerah, $negeri"
+        : '';
 
-    // Proses upload gambar
+    // Proses upload gambar (pilihan)
     $gambar = "";
     if (!empty($_FILES['gambar']['name'])) {
-        $target_dir = "C:/xampp_new\htdocs\penguatkuasa/anggota/uploads/";
+        $target_dir = "C:/xampp/htdocs/penguatkuasa/anggota/uploads/";
         $file_extension = pathinfo($_FILES["gambar"]["name"], PATHINFO_EXTENSION);
         $gambar_filename = uniqid() . '.' . $file_extension;
         $gambar_full_path = $target_dir . $gambar_filename;
         $gambar_relative_path = "/penguatkuasa/anggota/uploads/" . $gambar_filename;
         $imageFileType = strtolower($file_extension);
+
         $check = getimagesize($_FILES["gambar"]["tmp_name"]);
         if ($check !== false) {
-            if ($_FILES["gambar"]["size"] <= 5000000) {
+            if ($_FILES["gambar"]["size"] <= 5000000) { // 5MB
                 if (in_array($imageFileType, ["jpg", "png", "jpeg"])) {
                     if (move_uploaded_file($_FILES["gambar"]["tmp_name"], $gambar_full_path)) {
                         $gambar = $gambar_relative_path;
@@ -87,20 +93,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    // SQL INSERT
-    $sql = "INSERT INTO anggota (no_komputer, no_badan, nama, kad_pengenalan, gaji, id_jabatan, no_telefon, tarikh_masuk_kerja, alamat, gambar, id_jawatan, bahagian_id, unit_id, seksyen_id, id_status, id_penempatan)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // SQL untuk masukkan data ke table anggota
+    $sql = "INSERT INTO anggota (no_komputer, no_badan, nama, kad_pengenalan, gaji, id_jabatan, no_telefon, tarikh_masuk_kerja, alamat, gambar, id_jawatan, id_unit_seksyen, id_status, id_penempatan) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("ssssdissssiiiiii", $no_komputer, $no_badan, $nama, $kad_pengenalan, $gaji, $id_jabatan, $no_telefon, $tarikh_masuk_kerja, $alamat, $gambar, $id_jawatan, $bahagian_id, $unit_id, $seksyen_id, $id_status, $id_penempatan);
+    $stmt->bind_param("ssssdissssiiii", $no_komputer, $no_badan, $nama, $kad_pengenalan, $gaji, $id_jabatan, $no_telefon, $tarikh_masuk_kerja, $alamat, $gambar, $id_jawatan, $id_unit_seksyen, $id_status, $id_penempatan);
 
     try {
         if ($stmt->execute()) {
+            // Tambah rekod pertama ke sejarah_penempatan
             $sql_sejarah = "INSERT INTO sejarah_penempatan (no_komputer, id_unit_seksyen, tarikh_lapor, tarikh_tamat, id_jawatan, id_status) VALUES (?, ?, ?, NULL, ?, ?)";
             $stmt_sejarah = $conn->prepare($sql_sejarah);
-            $stmt_sejarah->bind_param("sisii", $no_komputer, $seksyen_id, $tarikh_masuk_kerja, $id_jawatan, $id_status);
+            $stmt_sejarah->bind_param("sisii", $no_komputer, $id_unit_seksyen, $tarikh_masuk_kerja, $id_jawatan, $id_status);
             $stmt_sejarah->execute();
             $stmt_sejarah->close();
 
+            // Tambah rekod gaji ke sejarah_gaji jika gaji diisi
             if (!empty($gaji) && !empty($tarikh_masuk_kerja)) {
                 $sql_sejarah_gaji = "INSERT INTO sejarah_gaji (no_komputer, gaji, tarikh_mula, tarikh_tamat) VALUES (?, ?, ?, NULL)";
                 $stmt_sejarah_gaji = $conn->prepare($sql_sejarah_gaji);
@@ -109,6 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $stmt_sejarah_gaji->close();
             }
 
+            // Simpan log aktiviti
             $log_sql = "INSERT INTO log_aktiviti (aktiviti, tarikh_masa, no_komputer) VALUES (?, NOW(), ?)";
             $log_stmt = $conn->prepare($log_sql);
             $aktiviti = "Mendaftar anggota baru: $nama";
@@ -116,29 +124,54 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $log_stmt->execute();
             $log_stmt->close();
 
+            // Berjaya, redirect dengan mesej
             echo "<script>
                 document.addEventListener('DOMContentLoaded', function() {
-                    Swal.fire({icon: 'success', title: 'Berjaya!', text: 'Anggota baru berjaya didaftarkan.', confirmButtonText: 'OK'})
-                    .then(() => window.location.href = './senarai_anggota.php');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berjaya!',
+                        text: 'Anggota baru berjaya didaftarkan.',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.href = './senarai_anggota.php';
+                    });
                 });
             </script>";
         }
     } catch (mysqli_sql_exception $e) {
         if ($e->getCode() == 1062) {
-            echo "<script>Swal.fire({icon:'error', title:'Ralat!', text:'No Komputer $no_komputer sudah wujud.'});</script>";
+            echo "<script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ralat!',
+                        text: 'No Komputer $no_komputer sudah wujud. Sila guna nombor lain.',
+                        confirmButtonText: 'OK'
+                    });
+                });
+            </script>";
         } else {
-            echo "<script>Swal.fire({icon:'error', title:'Ralat!', text:'" . addslashes($e->getMessage()) . "'});</script>";
+            echo "<script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ralat!',
+                        text: '" . addslashes($e->getMessage()) . "',
+                        confirmButtonText: 'OK'
+                    });
+                });
+            </script>";
         }
     }
     $stmt->close();
 }
 
-// Query dropdown
+// Query untuk ambil data dari table lookup
 $jawatan_result = $conn->query("SELECT id, nama FROM jawatan");
+$unit_seksyen_result = $conn->query("SELECT id, nama FROM unit_seksyen");
 $status_result = $conn->query("SELECT id, nama FROM status");
 $penempatan_result = $conn->query("SELECT id, nama FROM penempatan");
 $jabatan_result = $conn->query("SELECT id, nama_jabatan FROM jabatan");
-$bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY nama_bahagian");
 ?>
 
 <!DOCTYPE html>
@@ -147,51 +180,166 @@ $bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Anggota - Sistem Penguatkuasaan</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        body { background: linear-gradient(135deg, #e9ecef, #d6eaff); font-family: 'Arial', sans-serif; min-height: 100vh; }
-        .header { background-color: #0d1a40; color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.2); position: fixed; top: 0; width: 100%; z-index: 1000; }
-        .header h1 { margin: 0; font-size: 2rem; font-weight: bold; }
-        .form-container { max-width: 900px; margin: 80px auto 40px auto; padding: 30px; background-color: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border: 2px solid #0d1a40; }
-        h2 { color: #0d1a40; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); font-weight: bold; }
-        .form-label { font-weight: bold; color: #2c3e50; }
-        .form-control { border: 2px solid #0d1a40; border-radius: 8px; padding: 10px; }
-        .form-control:focus { border-color: #1e3a8a; box-shadow: 0 0 0 0.2rem rgba(29,58,138,0.25); }
-        .form-group.row { margin-bottom: 20px; }
-        .preview-img { max-width: 200px; margin-top: 10px; display: none; border-radius: 10px; border: 2px solid #0d1a40; }
-        .btn-custom { padding: 10px 20px; font-size: 1rem; font-weight: bold; border-radius: 8px; min-width: 150px; }
-        .btn-custom:hover { transform: scale(1.05); }
-        .btn-success { background-color: #0d1a40; border: none; }
-        .btn-success:hover { background-color: #1e3a8a; }
-        .btn-group { display: flex; gap: 15px; justify-content: center; flex-wrap: nowrap; margin-top: 20px; }
+        body {
+            background: linear-gradient(135deg, #e9ecef, #d6eaff);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: #0d1a40;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: bold;
+        }
+        .form-container {
+            max-width: 900px;
+            margin: 80px auto 40px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            border: 2px solid #0d1a40;
+        }
+        h2 {
+            color: #0d1a40;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+            font-weight: bold;
+        }
+        .form-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .form-control {
+            border: 2px solid #0d1a40;
+            border-radius: 8px;
+            padding: 10px;
+            transition: border-color 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #1e3a8a;
+            box-shadow: 0 0 0 0.2rem rgba(29, 58, 138, 0.25);
+        }
+        .form-group.row {
+            margin-bottom: 20px;
+        }
+        .preview-img {
+            max-width: 200px;
+            margin-top: 10px;
+            display: none;
+            border-radius: 10px;
+            border: 2px solid #0d1a40;
+        }
+        .btn-custom {
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: transform 0.1s ease, background-color 0.3s ease;
+            min-width: 150px;
+            text-align: center;
+        }
+        .btn-custom:hover {
+            transform: scale(1.05);
+        }
+        .btn-success {
+            background-color: #0d1a40;
+            border: none;
+        }
+        .btn-success:hover {
+            background-color: #1e3a8a;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            border: none;
+        }
+        .btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-navy {
+            background-color: #0d1a40;
+            border: none;
+            color: white;
+        }
+        .btn-navy:hover {
+            background-color: #1e3a8a;
+            color: white;
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: nowrap;
+            margin-top: 20px;
+        }
+        .input-group-text {
+            background-color: #0d1a40;
+            color: white;
+            border: 2px solid #0d1a40;
+            border-radius: 8px 0 0 8px;
+        }
     </style>
 </head>
 <body>
+    <!-- Header -->
     <div class="header">
         <h1>SISTEM PENGUATKUASAAN</h1>
     </div>
+
     <div class="form-container">
         <h2 class="text-center mb-4">DAFTAR ANGGOTA BARU</h2>
         <form method="POST" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" enctype="multipart/form-data" id="anggotaForm">
-
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">No Komputer (Wajib):</label>
-                <div class="col-sm-8"><input type="text" name="no_komputer" class="form-control" required maxlength="10"></div>
+                <div class="col-sm-8">
+                    <input type="text" name="no_komputer" class="form-control" required maxlength="10">
+                </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">No Badan (Pilihan):</label>
-                <div class="col-sm-8"><input type="text" name="no_badan" class="form-control"></div>
+                <div class="col-sm-8">
+                    <input type="text" name="no_badan" class="form-control">
+                </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Nama (Wajib):</label>
-                <div class="col-sm-8"><input type="text" name="nama" class="form-control" required></div>
+                <div class="col-sm-8">
+                    <input type="text" name="nama" class="form-control" required>
+                </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Kad Pengenalan (Pilihan):</label>
-                <div class="col-sm-8"><input type="text" name="kad_pengenalan" class="form-control" id="kad_pengenalan" placeholder="123456-12-1234"></div>
+                <div class="col-sm-8">
+                    <input type="text" name="kad_pengenalan" class="form-control" id="kad_pengenalan" placeholder="123456-12-1234">
+                </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Gaji (Pilihan):</label>
                 <div class="col-sm-8">
@@ -201,6 +349,7 @@ $bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY
                     </div>
                 </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Jabatan (Pilihan):</label>
                 <div class="col-sm-8">
@@ -212,14 +361,21 @@ $bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY
                     </select>
                 </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">No Telefon (Pilihan):</label>
-                <div class="col-sm-8"><input type="text" name="no_telefon" class="form-control" id="no_telefon" placeholder="01X-XXXXXXX"></div>
+                <div class="col-sm-8">
+                    <input type="text" name="no_telefon" class="form-control" id="no_telefon" placeholder="01X-XXXXXXX">
+                </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Tarikh Masuk Kerja (Pilihan):</label>
-                <div class="col-sm-8"><input type="date" name="tarikh_masuk_kerja" class="form-control"></div>
+                <div class="col-sm-8">
+                    <input type="date" name="tarikh_masuk_kerja" class="form-control">
+                </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Jawatan Terkini (Wajib):</label>
                 <div class="col-sm-8">
@@ -232,33 +388,16 @@ $bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY
                 </div>
             </div>
 
-            <!-- Bahagian Hierarki -->
             <div class="form-group row">
-                <label class="col-sm-4 col-form-label">Bahagian (Wajib):</label>
+                <label class="col-sm-4 col-form-label">Unit/Seksyen Terkini (Wajib):</label>
                 <div class="col-sm-8">
-                    <select name="bahagian_id" id="bahagian_id" class="form-control" onchange="loadUnit(this.value)" required>
-                        <option value="">Pilih Bahagian</option>
-                        <?php while ($row = $bahagian_result->fetch_assoc()) { ?>
-                            <option value="<?php echo $row['id']; ?>"><?php echo htmlspecialchars($row['nama_bahagian']); ?></option>
+                    <select name="id_unit_seksyen" class="form-control" id="id_unit_seksyen" required>
+                        <option value="">Pilih Unit/Seksyen</option>
+                        <?php
+                        $unit_seksyen_result->data_seek(0); // Reset pointer
+                        while ($row = $unit_seksyen_result->fetch_assoc()) { ?>
+                            <option value="<?php echo $row['id']; ?>"><?php echo $row['nama']; ?></option>
                         <?php } ?>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group row">
-                <label class="col-sm-4 col-form-label">Unit (Wajib):</label>
-                <div class="col-sm-8">
-                    <select name="unit_id" id="unit_id" class="form-control" onchange="loadSeksyen(this.value)" required>
-                        <option value="">Pilih Unit</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group row">
-                <label class="col-sm-4 col-form-label">Seksyen:</label>
-                <div class="col-sm-8">
-                    <select name="seksyen_id" id="seksyen_id" class="form-control">
-                        <option value="">Pilih Seksyen</option>
                     </select>
                 </div>
             </div>
@@ -274,6 +413,7 @@ $bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY
                     </select>
                 </div>
             </div>
+
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Penempatan (Wajib):</label>
                 <div class="col-sm-8">
@@ -286,16 +426,45 @@ $bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY
                 </div>
             </div>
 
-            <!-- Alamat -->
             <div class="form-group row">
                 <label class="col-sm-4 col-form-label">Alamat (Pilihan):</label>
                 <div class="col-sm-8">
-                    <div class="form-group row mb-2"><label class="col-sm-3 col-form-label">No:</label><div class="col-sm-9"><input type="text" name="alamat_no" class="form-control" placeholder="No"></div></div>
-                    <div class="form-group row mb-2"><label class="col-sm-3 col-form-label">Jalan:</label><div class="col-sm-9"><input type="text" name="alamat_jalan" class="form-control" placeholder="Jalan"></div></div>
-                    <div class="form-group row mb-2"><label class="col-sm-3 col-form-label">Taman:</label><div class="col-sm-9"><input type="text" name="alamat_taman" class="form-control" placeholder="Taman"></div></div>
-                    <div class="form-group row mb-2"><label class="col-sm-3 col-form-label">Poskod:</label><div class="col-sm-9"><input type="text" name="poskod" class="form-control" placeholder="Poskod"></div></div>
-                    <div class="form-group row mb-2"><label class="col-sm-3 col-form-label">Daerah:</label><div class="col-sm-9"><input type="text" name="daerah" class="form-control" placeholder="Daerah"></div></div>
-                    <div class="form-group row"><label class="col-sm-3 col-form-label">Negeri:</label><div class="col-sm-9"><input type="text" name="negeri" class="form-control" placeholder="Negeri"></div></div>
+                    <div class="form-group row mb-2">
+                        <label class="col-sm-3 col-form-label">No:</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="alamat_no" class="form-control" placeholder="No">
+                        </div>
+                    </div>
+                    <div class="form-group row mb-2">
+                        <label class="col-sm-3 col-form-label">Jalan:</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="alamat_jalan" class="form-control" placeholder="Jalan">
+                        </div>
+                    </div>
+                    <div class="form-group row mb-2">
+                        <label class="col-sm-3 col-form-label">Taman:</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="alamat_taman" class="form-control" placeholder="Taman">
+                        </div>
+                    </div>
+                    <div class="form-group row mb-2">
+                        <label class="col-sm-3 col-form-label">Poskod:</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="poskod" class="form-control" placeholder="Poskod">
+                        </div>
+                    </div>
+                    <div class="form-group row mb-2">
+                        <label class="col-sm-3 col-form-label">Daerah:</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="daerah" class="form-control" placeholder="Daerah">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">Negeri:</label>
+                        <div class="col-sm-9">
+                            <input type="text" name="negeri" class="form-control" placeholder="Negeri">
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -316,7 +485,9 @@ $bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY
         </form>
     </div>
 
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Pratonton gambar
@@ -331,40 +502,23 @@ $bahagian_result = $conn->query("SELECT id, nama_bahagian FROM bahagian ORDER BY
             }
         });
 
-        // Auto-format
+        // Auto-format Kad Pengenalan
         document.getElementById('kad_pengenalan').addEventListener('input', function(event) {
             let value = event.target.value.replace(/\D/g, '');
             if (value.length > 6) value = value.substring(0, 6) + '-' + value.substring(6);
             if (value.length > 9) value = value.substring(0, 9) + '-' + value.substring(9);
             event.target.value = value.substring(0, 14);
         });
+
+        // Auto-format No Telefon
         document.getElementById('no_telefon').addEventListener('input', function(event) {
             let value = event.target.value.replace(/\D/g, '');
             if (value.length > 3) value = value.substring(0, 3) + '-' + value.substring(3);
             event.target.value = value.substring(0, 12);
         });
-
-        // Cascading Dropdown
-        function loadUnit(bahagian_id) {
-            const unitSelect = document.getElementById('unit_id');
-            const seksyenSelect = document.getElementById('seksyen_id');
-            unitSelect.innerHTML = '<option value="">Pilih Unit</option>';
-            seksyenSelect.innerHTML = '<option value="">Pilih Seksyen</option>';
-            if (!bahagian_id) return;
-            fetch(`get_unit.php?bahagian_id=${bahagian_id}`)
-                .then(res => res.text())
-                .then(data => unitSelect.innerHTML = data);
-        }
-
-        function loadSeksyen(unit_id) {
-            const seksyenSelect = document.getElementById('seksyen_id');
-            seksyenSelect.innerHTML = '<option value="">Pilih Seksyen</option>';
-            if (!unit_id) return;
-            fetch(`get_seksyen.php?unit_id=${unit_id}`)
-                .then(res => res.text())
-                .then(data => seksyenSelect.innerHTML = data);
-        }
     </script>
 </body>
 </html>
-<?php $conn->close(); ?>
+<?php
+$conn->close();
+?>

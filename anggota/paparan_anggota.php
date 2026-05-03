@@ -1,43 +1,46 @@
 <?php
 include_once '../session_check.php'; // Gunakan session_check.php di folder akar
-
 // Sambungan ke database
 $servername = "localhost";
 $username = "root";
 $password = "";
 $dbname = "penguatkuasa";
-
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
     die("Sambungan gagal: " . $conn->connect_error);
 }
-
 // Ambil no_komputer dari URL
 $no_komputer = isset($_GET['no_komputer']) ? filter_input(INPUT_GET, 'no_komputer', FILTER_SANITIZE_STRING) : '';
 if (empty($no_komputer)) {
     echo "<script>alert('No Komputer tidak sah.'); window.location.href='./senarai_anggota.php';</script>";
     exit();
 }
-
-// Query untuk ambil maklumat anggota
-$sql = "SELECT a.*, j.nama AS jawatan, u.nama AS unit_seksyen, s.nama AS status, p.nama AS penempatan, jab.nama_jabatan AS jabatan 
-        FROM anggota a 
-        LEFT JOIN jawatan j ON a.id_jawatan = j.id 
-        LEFT JOIN unit_seksyen u ON a.id_unit_seksyen = u.id 
-        LEFT JOIN status s ON a.id_status = s.id 
-        LEFT JOIN penempatan p ON a.id_penempatan = p.id 
-        LEFT JOIN jabatan jab ON a.id_jabatan = jab.id 
+// Query untuk ambil maklumat anggota (Dikemaskini)
+$sql = "SELECT a.*, 
+        j.nama AS jawatan, 
+        s.nama AS status, 
+        p.nama AS penempatan, 
+        jab.nama_jabatan AS jabatan,
+        b.nama_bahagian AS bahagian,
+        u.nama AS unit,
+        sk.nama AS seksyen
+        FROM anggota a
+        LEFT JOIN jawatan j ON a.id_jawatan = j.id
+        LEFT JOIN status s ON a.id_status = s.id
+        LEFT JOIN penempatan p ON a.id_penempatan = p.id
+        LEFT JOIN jabatan jab ON a.id_jabatan = jab.id
+        LEFT JOIN bahagian b ON a.bahagian_id = b.id
+        LEFT JOIN unit u ON a.unit_id = u.id
+        LEFT JOIN seksyen sk ON a.seksyen_id = sk.id
         WHERE a.no_komputer = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("s", $no_komputer);
 $stmt->execute();
 $result = $stmt->get_result();
-
 if ($result->num_rows == 0) {
     echo "<script>alert('Anggota dengan No Komputer $no_komputer tidak wujud.'); window.location.href='./senarai_anggota.php';</script>";
     exit();
 }
-
 $anggota = $result->fetch_assoc();
 // Tukar semua data teks kepada huruf besar
 $anggota['nama'] = strtoupper($anggota['nama']);
@@ -45,7 +48,9 @@ $anggota['no_komputer'] = strtoupper($anggota['no_komputer']);
 $anggota['no_badan'] = strtoupper($anggota['no_badan'] ?: 'TIADA');
 $anggota['kad_pengenalan'] = strtoupper($anggota['kad_pengenalan'] ?: 'TIADA');
 $anggota['jawatan'] = strtoupper($anggota['jawatan'] ?: 'TIADA');
-$anggota['unit_seksyen'] = strtoupper($anggota['unit_seksyen'] ?: 'TIADA');
+$anggota['bahagian'] = strtoupper($anggota['bahagian'] ?: 'TIADA');
+$anggota['unit'] = strtoupper($anggota['unit'] ?: 'TIADA');
+$anggota['seksyen'] = strtoupper($anggota['seksyen'] ?: 'TIADA');
 $anggota['status'] = strtoupper($anggota['status'] ?: 'TIADA');
 $anggota['penempatan'] = strtoupper($anggota['penempatan'] ?: 'TIADA');
 $anggota['alamat'] = strtoupper($anggota['alamat'] ?: 'TIADA');
@@ -53,10 +58,8 @@ $anggota['no_telefon'] = strtoupper($anggota['no_telefon'] ?: 'TIADA');
 $anggota['jabatan'] = strtoupper($anggota['jabatan'] ?: 'TIADA');
 // Format gaji ke RM dengan dua tempat perpuluhan
 $anggota['gaji'] = !empty($anggota['gaji']) ? 'RM' . number_format($anggota['gaji'], 2, '.', ',') : 'TIADA';
-
 $stmt->close();
 ?>
-
 <!DOCTYPE html>
 <html lang="ms">
 <head>
@@ -235,10 +238,8 @@ $stmt->close();
     <div class="header">
         <h1>SISTEM PENGUATKUASAAN</h1>
     </div>
-
     <!-- Hamburger Menu untuk skrin kecil -->
     <button class="hamburger" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
-
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <a href="./kemaskini_anggota.php?no_komputer=<?php echo urlencode($anggota['no_komputer']); ?>" class="nav-link nav-kemas-kini"><i class="bi bi-pencil-square"></i>KEMAS KINI</a>
@@ -248,23 +249,18 @@ $stmt->close();
         <a href="./senarai_anggota.php" class="nav-link nav-senarai-anggota"><i class="bi bi-list-ul"></i>SENARAI ANGGOTA</a>
         <a href="./menu.php" class="nav-link nav-halaman-utama"><i class="bi bi-house"></i>KE HALAMAN UTAMA</a>
     </div>
-
     <div class="popup-container">
         <!-- Nama sebagai tajuk -->
         <h1 class="anggota-name text-center"><?php echo htmlspecialchars($anggota['nama']); ?></h1>
-
         <!-- Gambar -->
         <div class="text-center">
 <?php
 $gambar_path = !empty($anggota['gambar']) ? trim($anggota['gambar']) : '';
-
 // Detect environment
 $host = $_SERVER['HTTP_HOST'] ?? '';
 $is_local = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;
-
 // Set base path
 $base_url = $is_local ? '/penguatkuasa' : '';
-
 if (!empty($gambar_path)) {
     $full_path = $base_url . '/' . ltrim($gambar_path, '/');
 ?>
@@ -282,7 +278,6 @@ if (!empty($gambar_path)) {
 }
 ?>
 </div>
-
         <!-- Maklumat Anggota -->
         <div class="info-row row">
             <div class="col-sm-4 info-label">NO KOMPUTER:</div>
@@ -312,10 +307,21 @@ if (!empty($gambar_path)) {
             <div class="col-sm-4 info-label">TARIKH MASUK KERJA:</div>
             <div class="col-sm-8 info-value"><?php echo htmlspecialchars($anggota['tarikh_masuk_kerja'] ?: 'TIADA'); ?></div>
         </div>
+
+        <!-- BAHAGIAN, UNIT, SEKSYEN BARU -->
         <div class="info-row row">
-            <div class="col-sm-4 info-label">UNIT/SEKSYEN:</div>
-            <div class="col-sm-8 info-value"><?php echo htmlspecialchars($anggota['unit_seksyen']); ?></div>
+            <div class="col-sm-4 info-label">BAHAGIAN:</div>
+            <div class="col-sm-8 info-value"><?php echo htmlspecialchars($anggota['bahagian'] ?: 'TIADA'); ?></div>
         </div>
+        <div class="info-row row">
+            <div class="col-sm-4 info-label">UNIT:</div>
+            <div class="col-sm-8 info-value"><?php echo htmlspecialchars($anggota['unit'] ?: 'TIADA'); ?></div>
+        </div>
+        <div class="info-row row">
+            <div class="col-sm-4 info-label">SEKSYEN:</div>
+            <div class="col-sm-8 info-value"><?php echo htmlspecialchars($anggota['seksyen'] ?: 'TIADA'); ?></div>
+        </div>
+
         <div class="info-row row">
             <div class="col-sm-4 info-label">STATUS:</div>
             <div class="col-sm-8 info-value"><?php echo htmlspecialchars($anggota['status']); ?></div>
@@ -333,7 +339,6 @@ if (!empty($gambar_path)) {
             <div class="col-sm-8 info-value"><?php echo htmlspecialchars($anggota['no_telefon']); ?></div>
         </div>
     </div>
-
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
